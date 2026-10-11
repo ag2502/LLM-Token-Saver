@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
+from llm_token_saver.analysis import Report
 from llm_token_saver.config import Currency
+from llm_token_saver.detect import Finding, FindingKind
 from llm_token_saver.pricing import PriceTable
-from llm_token_saver.report.format import middle_truncate, percent, tokens
+from llm_token_saver.report.format import middle_truncate, percent, plural, tokens
 from llm_token_saver.stats import Group, Stats
 
 
@@ -95,3 +98,86 @@ def _group_table(heading: str, groups: list[Group], total: float, currency: Curr
             percent(group.cost / total if total else 0.0),
         )
     return table
+
+
+MIN_SHOWN_MONTHLY_USD = 0.5
+"""Actionable findings worth less than this per month are summarized, not listed."""
+
+KIND_LABELS = {
+    FindingKind.FREE_WIN: "free win",
+    FindingKind.TRADEOFF: "tradeoff",
+    FindingKind.INFO: "info",
+}
+
+
+def render_report(report: Report, *, currency: Currency, console: Console) -> None:
+    stats = report.stats
+    total = stats.cost.total
+    console.print(
+        f"[bold]{escape(report.title)}[/bold] · {stats.first:%Y-%m-%d} → {stats.last:%Y-%m-%d}"
+        f" · {stats.calls:,} calls in {stats.sessions:,} sessions"
+    )
+    console.print(
+        f"API-equivalent spend [bold]{currency.format(total)}[/bold]"
+        f" (≈{currency.format(report.monthly(total))}/month) at list prices retrieved"
+        f" {report.prices_retrieved:%Y-%m-%d}. On a subscription this is usage, not a bill."
+    )
+    savings = [f for f in report.findings if f.kind is not FindingKind.INFO]
+    actionable = [f for f in savings if report.monthly(f.savings_usd) >= MIN_SHOWN_MONTHLY_USD]
+    minor = [f for f in savings if f not in actionable]
+    if actionable:
+        table = Table(
+            title="\nWhere to save, per month at your current usage", title_justify="left"
+        )
+        table.add_column("#", justify="right")
+        table.add_column("Finding")
+        table.add_column("Type")
+        table.add_column("Saving / month", justify="right")
+        table.add_column("Basis")
+        for index, finding in enumerate(actionable, start=1):
+            table.add_row(
+                str(index),
+                escape(finding.title),
+                KIND_LABELS[finding.kind],
+                _saving(report, finding, currency),
+                "measured" if finding.measured else "estimated",
+            )
+        console.print(table)
+        free = sum(f.savings_usd for f in actionable if f.kind is FindingKind.FREE_WIN)
+        if free:
+            console.print(
+                f"Free wins together: about {currency.format(report.monthly(free))}/month "
+                f"({percent(free / total)} of spend). Overlapping savings are counted once."
+            )
+    for index, finding in enumerate(actionable, start=1):
+        _render_finding(f"{index}.", finding, report, currency, console)
+    if minor:
+        console.print(
+            f"\n[dim]{plural(len(minor), 'smaller finding')} under "
+            f"{currency.format(MIN_SHOWN_MONTHLY_USD)}/month not shown.[/dim]"
+        )
+    info = [f for f in report.findings if f.kind is FindingKind.INFO]
+    if info:
+        console.print("\n[bold]Good to know[/bold]")
+        for finding in info:
+            _render_finding("•", finding, report, currency, console)
+
+
+def _saving(report: Report, finding: Finding, currency: Currency) -> str:
+    amount = currency.format(report.monthly(finding.savings_usd))
+    return f"up to {amount}" if finding.ceiling else amount
+
+
+def _render_finding(
+    marker: str, finding: Finding, report: Report, currency: Currency, console: Console
+) -> None:
+    label = KIND_LABELS[finding.kind]
+    if finding.savings_usd > 0:
+        label += f", {_saving(report, finding, currency)}/month"
+    console.print(f"\n[bold]{marker} {escape(finding.title)}[/bold] [dim]({label})[/dim]")
+    console.print(escape(finding.summary))
+    for evidence in finding.evidence[:5]:
+        cost = currency.format(evidence.cost_usd) if evidence.cost_usd is not None else ""
+        note = f" · {escape(evidence.note)}" if evidence.note else ""
+        console.print(f"  [dim]-[/dim] {escape(middle_truncate(evidence.label, 60))}: {cost}{note}")
+    console.print(f"  [green]Fix:[/green] {escape(finding.fix)}")

@@ -24,3 +24,9 @@ def middle_truncate(text: str, width: int = 44) -> str:
         return text
     keep = width - 1
     return text[: keep // 2] + "…" + text[len(text) - (keep - keep // 2) :]
+
+
+def plural(count: int, noun: str, plural_form: str | None = None) -> str:
+    """`1 result`, `3 results`, `2 file reads`."""
+    word = noun if count == 1 else plural_form or f"{noun}s"
+    return f"{count:,} {word}"

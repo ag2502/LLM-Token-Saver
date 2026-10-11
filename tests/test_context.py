@@ -119,7 +119,8 @@ def test_duplicates_count_only_within_the_same_context() -> None:
     finding = duplicate_context_finding(context)
     assert finding is not None
     assert finding.savings_usd == pytest.approx(context.blocks[1].cost)
-    assert "1 tool results" in finding.summary
+    assert "1 tool result repeated" in finding.summary
+    assert "(1 re-read of unchanged files)" in finding.summary
 
 
 def finding(savings: float, kind: FindingKind = FindingKind.FREE_WIN) -> Finding:

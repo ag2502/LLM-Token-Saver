@@ -22,7 +22,7 @@ from llm_token_saver.detect.base import Evidence, Finding, FindingKind
 from llm_token_saver.estimate import TokenEstimator
 from llm_token_saver.pricing import PriceTable, Rates
 from llm_token_saver.pricing.engine import PER_MILLION
-from llm_token_saver.report.format import percent, tokens
+from llm_token_saver.report.format import percent, plural, tokens
 from llm_token_saver.schema import Block, BlockKind, Call, Dataset, Marker, MarkerKind, Thread
 from llm_token_saver.timeline import timeline
 
@@ -219,8 +219,9 @@ _TOOL_GROUPS = {
     "Bash": (
         "Long command output stays in context",
         "Make commands print less: pipe through `tail -n 40` or `grep`, use quiet flags "
-        "(`pytest -q`, `npm ci --silent`, `git log --oneline -n 20`). To cap every result, "
-        "lower `BASH_MAX_OUTPUT_LENGTH` (default 30000 characters) in the `env` block of "
+        "(`pytest -q`, `npm ci --silent`, `git log --oneline -n 20`), and print only the "
+        "lines you need from a file instead of `cat`-ing it. To cap every result, lower "
+        "`BASH_MAX_OUTPUT_LENGTH` (default 30000 characters) in the `env` block of "
         "~/.claude/settings.json.",
     ),
     "Read": (
@@ -245,6 +246,16 @@ _TOOL_GROUPS = {
         "Large tool results stay in context",
         "Keep tool results small: narrower searches and patterns return less.",
     ),
+}
+
+
+_GROUP_NOUNS = {
+    "Bash": "command result",
+    "Read": "file read",
+    "MCP tools": "MCP tool result",
+    "Web": "web result",
+    "Subagents": "subagent report",
+    "Other tools": "other tool result",
 }
 
 
@@ -282,7 +293,7 @@ def tool_output_findings(context: CarriedContext) -> list[Finding]:
                 title=title,
                 kind=FindingKind.FREE_WIN,
                 summary=(
-                    f"{len(items):,} {group} results were re-sent on later calls, "
+                    f"{plural(len(items), _GROUP_NOUNS[group])} were re-sent on later calls, "
                     f"{percent(total / context.prompt_cost)} of prompt spend. "
                     f"{len(oversized):,} were longer than ~{TOOL_OUTPUT_CAP_TOKENS:,} tokens; "
                     "the saving assumes each is cut to that size."
@@ -368,14 +379,14 @@ def duplicate_context_finding(context: CarriedContext) -> Finding | None:
     if savings <= 0:
         return None
     reads = sum(1 for item in duplicates if item.block.tool == "Read")
+    rereads = f" ({plural(reads, 're-read')} of unchanged files)" if reads else ""
     return Finding(
         detector="duplicate_context",
         title="The same tool output entered the context twice",
         kind=FindingKind.FREE_WIN,
         summary=(
-            f"{len(duplicates):,} tool results repeated output already in the context "
-            f"({reads:,} were re-reads of unchanged files). Each copy is re-sent on every "
-            "later call."
+            f"{plural(len(duplicates), 'tool result')} repeated output already in the "
+            f"context{rereads}. Each copy is re-sent on every later call."
         ),
         fix=(
             "When a file hasn't changed, ask Claude to use what it already read instead of "
@@ -396,8 +407,8 @@ def _top_details(items: list[CarriedBlock], limit: int = 5) -> list[Evidence]:
         Evidence(
             label,
             sum(i.cost for i in group),
-            f"{len(group):,} results, ~{tokens(sum(i.tokens for i in group) / len(group))} "
-            "tokens each",
+            f"{plural(len(group), 'result')}, "
+            f"~{tokens(sum(i.tokens for i in group) / len(group))} tokens each",
         )
         for label, group in ranked[:limit]
     ]

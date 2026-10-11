@@ -11,10 +11,13 @@ import typer
 from rich.console import Console
 
 from llm_token_saver import __version__
+from llm_token_saver.analysis import build_report
 from llm_token_saver.config import ConfigError, Settings, load_settings
 from llm_token_saver.ingest import claude_code
 from llm_token_saver.pricing import PriceTable
-from llm_token_saver.report.terminal import render_stats
+from llm_token_saver.report.json_export import report_to_json
+from llm_token_saver.report.terminal import render_report, render_stats
+from llm_token_saver.schema import Dataset
 from llm_token_saver.stats import compute_stats
 from llm_token_saver.store import Store
 
@@ -68,19 +71,32 @@ def claude_code_stats(
     top: Annotated[int, typer.Option(help="Rows to show in each breakdown.")] = 10,
 ) -> None:
     """Where your Claude Code tokens went: by token type, model, project and session."""
-    settings = _settings()
-    start = parse_since(since)
-    root = (projects_dir or settings.claude_code.projects_dir).expanduser()
-    dataset = claude_code.load(root, since=start)
-    console = Console()
-    if not dataset.calls:
-        console.print(f"No Claude Code calls found in {root} since {start:%Y-%m-%d %H:%M} UTC.")
-        raise typer.Exit()
+    settings, dataset = _load_claude_code(since, projects_dir)
     prices = PriceTable.bundled()
     stats = compute_stats(Store(dataset.calls, prices), top=top, utc_offset_seconds=_utc_offset())
     render_stats(
-        stats, currency=settings.currency, prices=prices, console=console, title="Claude Code"
+        stats, currency=settings.currency, prices=prices, console=Console(), title="Claude Code"
     )
+
+
+@claude_code_app.command("report")
+def claude_code_report(
+    since: SinceOption = "30d",
+    projects_dir: ProjectsDirOption = None,
+    json_path: Annotated[
+        Path | None, typer.Option("--json", help="Also write the report as JSON to this file.")
+    ] = None,
+) -> None:
+    """What is wasting tokens in your Claude Code sessions, ranked by monthly saving."""
+    settings, dataset = _load_claude_code(since, projects_dir)
+    report = build_report(
+        dataset, PriceTable.bundled(), title="Claude Code", utc_offset_seconds=_utc_offset()
+    )
+    console = Console()
+    render_report(report, currency=settings.currency, console=console)
+    if json_path is not None:
+        json_path.write_text(report_to_json(report, settings.currency), encoding="utf-8")
+        console.print(f"\nWrote {json_path}")
 
 
 def parse_since(value: str, *, now: datetime | None = None) -> datetime:
@@ -99,6 +115,17 @@ def parse_since(value: str, *, now: datetime | None = None) -> datetime:
             "use a duration like 12h, 7d or 2w, or a date like 2026-10-01", param_hint="--since"
         ) from None
     return datetime(day.year, day.month, day.day).astimezone().astimezone(UTC)
+
+
+def _load_claude_code(since: str, projects_dir: Path | None) -> tuple[Settings, Dataset]:
+    settings = _settings()
+    start = parse_since(since)
+    root = (projects_dir or settings.claude_code.projects_dir).expanduser()
+    dataset = claude_code.load(root, since=start)
+    if not dataset.calls:
+        Console().print(f"No Claude Code calls found in {root} since {start:%Y-%m-%d %H:%M} UTC.")
+        raise typer.Exit()
+    return settings, dataset
 
 
 def _settings() -> Settings:
