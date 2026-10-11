@@ -372,6 +372,7 @@ class _ThreadBuilder:
                         seq=response.last_seq,
                         kind=BlockKind.THINKING,
                         tokens=call.thinking,
+                        detail=call.effort,
                     )
                 )
         if not calls:

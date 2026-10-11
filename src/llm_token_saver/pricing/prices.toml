@@ -28,6 +28,7 @@ geo_multiplier = true
 
 [models.claude-fable-5]
 name = "Claude Fable 5"
+successor = "claude-fable-5-1"  # newer model in the same tier
 input = 10.0
 cache_write_5m = 12.5
 cache_write_1h = 20.0
@@ -37,6 +38,7 @@ geo_multiplier = true
 
 [models.claude-mythos-5]
 name = "Claude Mythos 5"
+successor = "claude-mythos-5-1"  # newer model in the same tier
 input = 10.0
 cache_write_5m = 12.5
 cache_write_1h = 20.0
@@ -56,6 +58,7 @@ geo_multiplier = true
 
 [models.claude-opus-5]
 name = "Claude Opus 5"
+successor = "claude-opus-5-5"  # newer model in the same tier
 input = 5.0
 cache_write_5m = 6.25
 cache_write_1h = 10.0
@@ -66,6 +69,7 @@ geo_multiplier = true
 
 [models.claude-opus-4-8]
 name = "Claude Opus 4.8"
+successor = "claude-opus-5-5"  # newer model in the same tier
 input = 5.0
 cache_write_5m = 6.25
 cache_write_1h = 10.0
@@ -76,6 +80,7 @@ geo_multiplier = true
 
 [models.claude-opus-4-7]
 name = "Claude Opus 4.7"
+successor = "claude-opus-5-5"  # newer model in the same tier
 input = 5.0
 cache_write_5m = 6.25
 cache_write_1h = 10.0
@@ -85,6 +90,7 @@ geo_multiplier = true
 
 [models.claude-opus-4-6]
 name = "Claude Opus 4.6"
+successor = "claude-opus-5-5"  # newer model in the same tier
 input = 5.0
 cache_write_5m = 6.25
 cache_write_1h = 10.0
@@ -94,6 +100,7 @@ geo_multiplier = true     # speed = "fast" runs and bills at standard rates here
 
 [models.claude-opus-4-5]
 name = "Claude Opus 4.5"
+successor = "claude-opus-5-5"  # newer model in the same tier
 input = 5.0
 cache_write_5m = 6.25
 cache_write_1h = 10.0
@@ -102,6 +109,7 @@ output = 25.0
 
 [models.claude-opus-4-1]
 name = "Claude Opus 4.1"
+successor = "claude-opus-5-5"  # newer model in the same tier
 input = 15.0
 cache_write_5m = 18.75
 cache_write_1h = 30.0
@@ -110,6 +118,7 @@ output = 75.0
 
 [models.claude-opus-4]
 name = "Claude Opus 4"
+successor = "claude-opus-5-5"  # newer model in the same tier
 input = 15.0
 cache_write_5m = 18.75
 cache_write_1h = 30.0
@@ -127,6 +136,7 @@ geo_multiplier = true
 
 [models.claude-sonnet-5]
 name = "Claude Sonnet 5"
+successor = "claude-sonnet-5-5"  # newer model in the same tier
 input = 2.0
 cache_write_5m = 2.5
 cache_write_1h = 4.0
@@ -136,6 +146,7 @@ geo_multiplier = true
 
 [models.claude-sonnet-4-6]
 name = "Claude Sonnet 4.6"
+successor = "claude-sonnet-5-5"  # newer model in the same tier
 input = 3.0
 cache_write_5m = 3.75
 cache_write_1h = 6.0
@@ -145,6 +156,7 @@ geo_multiplier = true
 
 [models.claude-sonnet-4-5]
 name = "Claude Sonnet 4.5"
+successor = "claude-sonnet-5-5"  # newer model in the same tier
 input = 3.0
 cache_write_5m = 3.75
 cache_write_1h = 6.0
@@ -153,6 +165,7 @@ output = 15.0
 
 [models.claude-sonnet-4]
 name = "Claude Sonnet 4"
+successor = "claude-sonnet-5-5"  # newer model in the same tier
 input = 3.0
 cache_write_5m = 3.75
 cache_write_1h = 6.0
@@ -180,6 +193,7 @@ output = 2.50
 
 [models.claude-haiku-4-5]
 name = "Claude Haiku 4.5"
+successor = "claude-haiku-5-5"  # newer model in the same tier
 input = 1.0
 cache_write_5m = 1.25
 cache_write_1h = 2.0
@@ -188,6 +202,7 @@ output = 5.0
 
 [models.claude-3-5-haiku]
 name = "Claude Haiku 3.5"
+successor = "claude-haiku-5-5"  # newer model in the same tier
 input = 0.80
 cache_write_5m = 1.0
 cache_write_1h = 1.60

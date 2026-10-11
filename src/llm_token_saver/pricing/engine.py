@@ -46,6 +46,8 @@ class ModelPrice:
     long_context_above: int | None = None
     fast_multiplier: float = 1.0
     geo_multiplier: bool = False
+    successor: str | None = None
+    """A newer model in the same tier, when one exists."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -201,4 +203,5 @@ def _parse_model(model_id: str, entry: dict[str, Any]) -> ModelPrice:
         long_context_above=int(long_context["above_prompt_tokens"]) if long_context else None,
         fast_multiplier=float(entry.get("fast_multiplier", 1.0)),
         geo_multiplier=bool(entry.get("geo_multiplier", False)),
+        successor=entry.get("successor"),
     )
