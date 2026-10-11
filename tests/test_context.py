@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 
 import pytest
 from hypothesis import given, settings
@@ -14,73 +14,8 @@ from llm_token_saver.detect.context import (
     stale_context_finding,
     tool_output_findings,
 )
-from llm_token_saver.estimate import TokenEstimator
-from llm_token_saver.pricing import PriceTable
-from llm_token_saver.schema import Block, BlockKind, Call, Dataset, Marker, MarkerKind, Thread
-
-PRICES = PriceTable.bundled()
-ONE_CHAR_PER_TOKEN = TokenEstimator({"claude-opus-5-5": 1.0})
-T0 = datetime(2026, 10, 1, tzinfo=UTC)
-READ, WRITE_5M = 0.20, 5.0  # Claude Opus 5.5, USD per million tokens
-
-
-class ThreadBuilder:
-    def __init__(self) -> None:
-        self.seq = 0
-        self.thread = Thread(thread_id="t", session_id="s", source="test", project="~/p")
-
-    def block(
-        self,
-        chars: int,
-        kind: BlockKind = BlockKind.TOOL_RESULT,
-        tool: str = "Bash",
-        detail: str = "",
-        content_hash: str = "",
-    ) -> ThreadBuilder:
-        self.thread.blocks.append(
-            Block(
-                session_id="s",
-                thread_id="t",
-                seq=self._next(),
-                kind=kind,
-                chars=chars,
-                tool=tool,
-                detail=detail,
-                content_hash=content_hash,
-            )
-        )
-        return self
-
-    def call(
-        self, read: int = 0, write: int = 0, uncached: int = 0, output: int = 0
-    ) -> ThreadBuilder:
-        seq = self._next()
-        self.thread.calls.append(
-            Call(
-                call_id=f"c{seq}",
-                source="test",
-                session_id="s",
-                thread_id="t",
-                seq=seq,
-                timestamp=T0 + timedelta(minutes=seq),
-                model="claude-opus-5-5",
-                input_uncached=uncached,
-                cache_read=read,
-                cache_write_5m=write,
-                output=output,
-            )
-        )
-        return self
-
-    def compact(self) -> ThreadBuilder:
-        self.thread.markers.append(
-            Marker(session_id="s", thread_id="t", seq=self._next(), kind=MarkerKind.COMPACTION)
-        )
-        return self
-
-    def _next(self) -> int:
-        self.seq += 1
-        return self.seq
+from llm_token_saver.schema import Dataset
+from tests.builders import ONE_CHAR_PER_TOKEN, PRICES, READ, T0, WRITE_5M, ThreadBuilder
 
 
 def analyze(builder: ThreadBuilder, window_start: datetime | None = None, **kwargs: int):
