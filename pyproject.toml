@@ -1,0 +1,66 @@
+[project]
+name = "llm-token-saver"
+version = "0.0.1"
+description = "Find out why your LLM bill is high, fix the waste, and route easy calls to cheaper models with a statistical quality guarantee."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{ name = "Amogh Gaikwad", email = "amogh.g2003@gmail.com" }]
+requires-python = ">=3.11"
+keywords = ["llm", "tokens", "cost", "prompt-caching", "router", "opentelemetry", "claude"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: System :: Monitoring",
+]
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.7",
+]
+
+[project.urls]
+Homepage = "https://github.com/ag2502/LLM-Token-Saver"
+Issues = "https://github.com/ag2502/LLM-Token-Saver/issues"
+
+[project.scripts]
+tokensaver = "llm_token_saver.cli:app"
+llm-token-saver = "llm_token_saver.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "hypothesis>=6.100",
+    "ruff>=0.8",
+    "pyright[nodejs]>=1.1.390",
+]
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/llm_token_saver"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
