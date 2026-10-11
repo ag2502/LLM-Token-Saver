@@ -197,7 +197,7 @@ class _ThreadBuilder:
         if not self.session_id and isinstance(entry.get("sessionId"), str):
             self.session_id = entry["sessionId"]
         if not self.project and isinstance(entry.get("cwd"), str):
-            self.project = entry["cwd"]
+            self.project = shorten_path(entry["cwd"])
         if entry.get("isSidechain") is True:
             self.is_sidechain = True
         timestamp = _parse_timestamp(entry.get("timestamp")) or self.last_timestamp
