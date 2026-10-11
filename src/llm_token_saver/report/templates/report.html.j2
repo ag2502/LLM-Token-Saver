@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="generator" content="llm-token-saver {{ view.version }}">
+<title>Token Saver Report</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --ring: rgba(11, 11, 11, 0.10);
+  --code-bg: #f0efec;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --ring: rgba(255, 255, 255, 0.10);
+    --code-bg: #2c2c2a;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --ring: rgba(255, 255, 255, 0.10);
+  --code-bg: #2c2c2a;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+main { max-width: 980px; margin: 0 auto; padding: 32px 16px 64px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 4px 0 8px; font-weight: 650; }
+h2 { font-size: 19px; margin: 0 0 12px; font-weight: 620; }
+h3 { font-size: 16px; margin: 0; font-weight: 620; }
+p { margin: 0 0 8px; }
+.eyebrow { color: var(--muted); font-size: 13px; letter-spacing: 0.02em; margin: 0; }
+.meta, .note { color: var(--ink-2); }
+.small { font-size: 13px; color: var(--muted); }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--ring);
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 16px;
+}
+.hero { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
+.hero .figure { font-size: 52px; font-weight: 650; line-height: 1.05; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; }
+.tile { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 14px 16px; }
+.tile .label { color: var(--ink-2); font-size: 13px; }
+.tile .value { font-size: 24px; font-weight: 620; margin-top: 2px; }
+.tile .sub { color: var(--muted); font-size: 13px; }
+.stack { display: flex; gap: 2px; height: 24px; margin: 8px 0 14px; }
+.stack span { display: block; min-width: 0; }
+.stack span:first-child { border-radius: 4px 0 0 4px; }
+.stack span:last-child { border-radius: 0 4px 4px 0; }
+.legend { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+.legend li { display: grid; grid-template-columns: 14px 1fr auto auto auto; gap: 10px; align-items: center; font-variant-numeric: tabular-nums; }
+.swatch { width: 12px; height: 12px; border-radius: 3px; }
+.sw1 { background: var(--s1); } .sw2 { background: var(--s2); } .sw3 { background: var(--s3); }
+.sw4 { background: var(--s4); } .sw5 { background: var(--s5); }
+.legend .share { color: var(--ink-2); min-width: 3.5em; text-align: right; }
+.legend .tok { color: var(--muted); min-width: 4.5em; text-align: right; }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--ink-2); font-weight: 560; font-size: 13px; }
+td.num, th.num { text-align: right; }
+.badge { display: inline-block; font-size: 12px; font-weight: 560; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--axis); color: var(--ink-2); white-space: nowrap; }
+.finding + .finding { border-top: 1px solid var(--grid); margin-top: 18px; padding-top: 18px; }
+.finding header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-bottom: 6px; }
+.finding .saving { margin-left: auto; font-weight: 620; white-space: nowrap; }
+.finding .fix { margin-top: 8px; }
+.finding .fix strong { font-weight: 620; }
+.evidence { margin-top: 6px; }
+.evidence td { font-size: 14px; }
+code { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+svg { display: block; width: 100%; height: auto; }
+svg text { fill: var(--muted); font: 11px system-ui, -apple-system, "Segoe UI", sans-serif; }
+.gridline { stroke: var(--grid); stroke-width: 1; }
+.baseline { stroke: var(--axis); stroke-width: 1; }
+.col { fill: var(--s1); }
+.hit { fill: transparent; cursor: default; outline: none; }
+.bar:hover .col, .bar:focus-within .col { opacity: 0.72; }
+details summary { cursor: pointer; color: var(--ink-2); margin-top: 10px; }
+.tip { position: fixed; pointer-events: none; z-index: 10; background: var(--surface); color: var(--ink); border: 1px solid var(--ring); border-radius: 8px; padding: 6px 10px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12); font-size: 13px; display: grid; }
+.tip strong { font-size: 15px; }
+.tip span { color: var(--ink-2); }
+footer { margin-top: 28px; color: var(--ink-2); font-size: 14px; }
+footer h2 { font-size: 16px; }
+footer li { margin-bottom: 4px; }
+@media (max-width: 560px) {
+  .hero .figure { font-size: 44px; }
+  .finding .saving { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow">LLM Token Saver · {{ view.title }}</p>
+  <h1>Where your tokens went, and what to fix first</h1>
+  <p class="meta">{{ view.period }} · {{ view.calls }} calls in {{ view.sessions }} sessions ({{ view.subagent_runs }} subagent runs) · list prices retrieved {{ view.prices_retrieved }}</p>
+
+  <section class="card hero" aria-label="Monthly spend">
+    <span class="figure">{{ view.monthly_spend }}</span>
+    <span class="note">API-equivalent spend per month ({{ view.window_spend }} in this period). On a subscription this is usage, not a bill.</span>
+  </section>
+
+  <section class="tiles" aria-label="Key numbers">
+    {% for tile in view.tiles %}
+    <div class="tile">
+      <div class="label">{{ tile.label }}</div>
+      <div class="value">{{ tile.value }}</div>
+      <div class="sub">{{ tile.note }}</div>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="card" aria-labelledby="split-title">
+    <h2 id="split-title">Where the money went</h2>
+    <div class="stack" role="img" aria-label="Spend by token type: {% for part in view.split %}{{ part.label }} {{ part.share_text }}{% if not loop.last %}, {% endif %}{% endfor %}">
+      {% for part in view.split if part.share >= 0.001 %}
+      <span class="sw{{ part.slot }}" style="flex: {{ '%.5f'|format(part.share) }} 1 0"></span>
+      {% endfor %}
+    </div>
+    <ul class="legend">
+      {% for part in view.split %}
+      <li><span class="swatch sw{{ part.slot }}"></span><span>{{ part.label }}</span><span>{{ part.value }}</span><span class="share">{{ part.share_text }}</span><span class="tok">{{ part.tokens }} tok</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card" aria-labelledby="save-title">
+    <h2 id="save-title">Where to save, per month at your current usage</h2>
+    {% if view.findings %}
+    <p class="small">Free wins save money without lowering answer quality; tradeoffs can. Overlapping savings are counted once.</p>
+    {% for f in view.findings %}
+    <article class="finding">
+      <header>
+        <h3>{{ loop.index }}. {{ f.title }}</h3>
+        <span class="badge">{{ f.kind }}</span>
+        <span class="badge">{{ f.basis }}</span>
+        <span class="saving">{{ f.saving }}/month</span>
+      </header>
+      <p>{{ f.summary }}</p>
+      {% if f.evidence %}
+      <div class="scroll"><table class="evidence">
+        <tbody>
+        {% for e in f.evidence %}
+          <tr><td>{{ e.label }}</td><td class="num">{{ e.cost }}</td><td class="note">{{ e.note }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      {% endif %}
+      <p class="fix"><strong>Fix:</strong> {{ f.fix|code }}</p>
+    </article>
+    {% endfor %}
+    {% else %}
+    <p>No saving here is worth more than {{ view.min_shown }} a month. Nothing needs changing.</p>
+    {% endif %}
+  </section>
+
+  {% if view.info %}
+  <section class="card" aria-labelledby="info-title">
+    <h2 id="info-title">Good to know</h2>
+    {% for f in view.info %}
+    <article class="finding">
+      <header><h3>{{ f.title }}</h3></header>
+      <p>{{ f.summary }}</p>
+      {% if f.evidence %}
+      <div class="scroll"><table class="evidence"><tbody>
+        {% for e in f.evidence %}
+        <tr><td>{{ e.label }}</td><td class="num">{{ e.cost }}</td><td class="note">{{ e.note }}</td></tr>
+        {% endfor %}
+      </tbody></table></div>
+      {% endif %}
+      <p class="fix"><strong>Fix:</strong> {{ f.fix|code }}</p>
+    </article>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <section class="card" aria-labelledby="daily-title">
+    <h2 id="daily-title">Spend by day</h2>
+    {% set c = view.daily %}
+    <svg viewBox="0 0 {{ c.width }} {{ c.height }}" role="img" aria-label="{{ c.summary }}">
+      {% for t in c.ticks %}
+      <line class="{{ 'baseline' if loop.first else 'gridline' }}" x1="{{ c.plot_left }}" x2="{{ c.plot_right }}" y1="{{ '%.2f'|format(t.y) }}" y2="{{ '%.2f'|format(t.y) }}"/>
+      <text x="{{ c.plot_left - 8 }}" y="{{ '%.2f'|format(t.y + 4) }}" text-anchor="end">{{ t.label }}</text>
+      {% endfor %}
+      {% for b in c.bars %}
+      <g class="bar">
+        {% if b.path %}<path class="col" d="{{ b.path }}"/>{% endif %}
+        <rect class="hit" x="{{ '%.2f'|format(b.hit_x) }}" y="{{ c.plot_top }}" width="{{ '%.2f'|format(b.hit_width) }}" height="{{ c.baseline - c.plot_top }}" tabindex="0" data-tip data-label="{{ b.label }}" data-value="{{ b.value }}"><title>{{ b.value }} · {{ b.label }}</title></rect>
+      </g>
+      {% endfor %}
+      {% for l in c.x_labels %}
+      <text x="{{ '%.2f'|format(l.x) }}" y="{{ c.height - 8 }}" text-anchor="middle">{{ l.label }}</text>
+      {% endfor %}
+    </svg>
+    <details>
+      <summary>Show as a table</summary>
+      <div class="scroll"><table>
+        <thead><tr><th>Day</th><th class="num">Calls</th><th class="num">Spend</th></tr></thead>
+        <tbody>
+        {% for r in c.rows %}<tr><td>{{ r.day }}</td><td class="num">{{ r.calls }}</td><td class="num">{{ r.cost }}</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </details>
+  </section>
+
+  <section class="grid-2">
+    {% for heading, rows in [("By model", view.by_model), ("By effort", view.by_effort)] %}
+    <div class="card" style="margin-top: 16px;">
+      <h2>{{ heading }}</h2>
+      <div class="scroll"><table>
+        <thead><tr><th>{{ heading[3:]|capitalize }}</th><th class="num">Calls</th><th class="num">Spend</th><th class="num">Share</th></tr></thead>
+        <tbody>
+        {% for r in rows %}<tr><td>{{ r.key }}</td><td class="num">{{ r.calls }}</td><td class="num">{{ r.cost }}</td><td class="num">{{ r.share }}</td></tr>{% endfor %}
+        </tbody>
+      </table></div>
+    </div>
+    {% endfor %}
+  </section>
+
+  <section class="card">
+    <h2>By project</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Project</th><th class="num">Calls</th><th class="num">Spend</th><th class="num">Share</th></tr></thead>
+      <tbody>
+      {% for r in view.by_project %}<tr><td>{{ r.key }}</td><td class="num">{{ r.calls }}</td><td class="num">{{ r.cost }}</td><td class="num">{{ r.share }}</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="card">
+    <h2>Most expensive sessions</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Started</th><th>Project</th><th class="num">Calls</th><th class="num">Peak context</th><th class="num">Spend</th></tr></thead>
+      <tbody>
+      {% for r in view.sessions_table %}<tr><td>{{ r.started }}</td><td>{{ r.project }}</td><td class="num">{{ r.calls }}</td><td class="num">{{ r.peak }}</td><td class="num">{{ r.cost }}</td></tr>{% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+
+  <footer>
+    <h2>How these numbers are made</h2>
+    <ul>
+      <li>Costs use list prices from <a href="{{ view.prices_source }}">the Claude pricing page</a>, retrieved {{ view.prices_retrieved }}, per token type: uncached input, cache writes (5-minute and 1-hour), cache reads and output.</li>
+      <li>Every call re-sends the whole conversation. Each call's prompt cost is split across the content inside it in prompt order (cache reads, then cache writes, then uncached input), so a tool result's cost includes every later call that carried it. Attributed costs add up to the bill exactly.</li>
+      <li>Transcripts record characters, not tokens, for tool output and other context. Sizes are estimated with characters-per-token ratios fitted to your own usage ({{ view.chars_per_token or "defaults" }}). Savings marked "estimated" depend on these; "measured" ones come straight from billed usage.</li>
+      <li>Savings are projected to 30 days from this period and deflated so that overlapping fixes are counted once.</li>
+    </ul>
+    <p class="small">Generated {{ view.generated }} by llm-token-saver {{ view.version }}. Your logs never left this machine.</p>
+  </footer>
+</main>
+<script>
+(() => {
+  const tip = document.createElement("div");
+  tip.className = "tip";
+  tip.hidden = true;
+  document.body.appendChild(tip);
+  const show = (el, x, y) => {
+    const value = document.createElement("strong");
+    value.textContent = el.dataset.value;
+    const label = document.createElement("span");
+    label.textContent = el.dataset.label;
+    tip.replaceChildren(value, label);
+    tip.hidden = false;
+    const box = tip.getBoundingClientRect();
+    tip.style.left = Math.min(Math.max(8, x - box.width / 2), innerWidth - box.width - 8) + "px";
+    tip.style.top = Math.max(8, y - box.height - 12) + "px";
+  };
+  const hide = () => { tip.hidden = true; };
+  for (const el of document.querySelectorAll("[data-tip]")) {
+    el.querySelector("title")?.remove();
+    el.addEventListener("pointermove", (e) => show(el, e.clientX, e.clientY));
+    el.addEventListener("pointerleave", hide);
+    el.addEventListener("focus", () => { const r = el.getBoundingClientRect(); show(el, r.left + r.width / 2, r.top); });
+    el.addEventListener("blur", hide);
+  }
+})();
+</script>
+</body>
+</html>

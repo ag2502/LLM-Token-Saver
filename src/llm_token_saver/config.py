@@ -50,6 +50,13 @@ class Currency(BaseModel):
             return f"{self.symbol}{value:,.0f}"
         return f"{self.symbol}{value:,.2f}"
 
+    def format_axis(self, usd: float) -> str:
+        """Compact axis label: $0, $2.5, $40, $1.2K."""
+        value = usd * self.per_usd
+        if abs(value) >= 1_000:
+            return f"{self.symbol}{value / 1_000:,.1f}".rstrip("0").rstrip(".") + "K"
+        return f"{self.symbol}{value:,.2f}".rstrip("0").rstrip(".")
+
 
 class ClaudeCodeSettings(BaseModel):
     model_config = ConfigDict(extra="forbid")

@@ -15,6 +15,7 @@ from llm_token_saver.analysis import build_report
 from llm_token_saver.config import ConfigError, Settings, load_settings
 from llm_token_saver.ingest import claude_code
 from llm_token_saver.pricing import PriceTable
+from llm_token_saver.report.html import render_html
 from llm_token_saver.report.json_export import report_to_json
 from llm_token_saver.report.terminal import render_report, render_stats
 from llm_token_saver.schema import Dataset
@@ -86,6 +87,10 @@ def claude_code_report(
     json_path: Annotated[
         Path | None, typer.Option("--json", help="Also write the report as JSON to this file.")
     ] = None,
+    html_path: Annotated[
+        Path | None,
+        typer.Option("--html", help="Also write a self-contained HTML report to this file."),
+    ] = None,
 ) -> None:
     """What is wasting tokens in your Claude Code sessions, ranked by monthly saving."""
     settings, dataset = _load_claude_code(since, projects_dir)
@@ -97,6 +102,9 @@ def claude_code_report(
     if json_path is not None:
         json_path.write_text(report_to_json(report, settings.currency), encoding="utf-8")
         console.print(f"\nWrote {json_path}")
+    if html_path is not None:
+        html_path.write_text(render_html(report, settings.currency), encoding="utf-8")
+        console.print(f"\nWrote {html_path}")
 
 
 def parse_since(value: str, *, now: datetime | None = None) -> datetime:
