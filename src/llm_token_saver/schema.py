@@ -116,10 +116,20 @@ class Thread:
 
 @dataclass(slots=True)
 class Dataset:
-    """Everything one import produced."""
+    """Everything one import produced.
+
+    Threads are kept whole even when they started before `window_start`, because earlier
+    content is still part of the context that later calls paid to read. Only calls at or
+    after `window_start` count toward spend.
+    """
 
     threads: list[Thread] = field(default_factory=list)
+    window_start: datetime | None = None
+
+    def in_window(self, call: Call) -> bool:
+        return self.window_start is None or call.timestamp >= self.window_start
 
     @property
     def calls(self) -> list[Call]:
-        return [call for thread in self.threads for call in thread.calls]
+        """Calls inside the window, across all threads."""
+        return [call for thread in self.threads for call in thread.calls if self.in_window(call)]
