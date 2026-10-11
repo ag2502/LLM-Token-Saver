@@ -353,16 +353,27 @@ class _ThreadBuilder:
             if call is None:
                 continue
             calls.append(call)
-            # The response enters the context right after it was generated.
+            # The response enters the context right after it was generated: its visible
+            # part and, separately, its thinking (which later prompts mostly keep).
             outputs.append(
                 Block(
                     session_id=self.session_id,
                     thread_id=self.thread_id,
                     seq=response.last_seq,
                     kind=BlockKind.ASSISTANT_OUTPUT,
-                    tokens=call.output,
+                    tokens=call.output - call.thinking,
                 )
             )
+            if call.thinking:
+                outputs.append(
+                    Block(
+                        session_id=self.session_id,
+                        thread_id=self.thread_id,
+                        seq=response.last_seq,
+                        kind=BlockKind.THINKING,
+                        tokens=call.thinking,
+                    )
+                )
         if not calls:
             return None
         blocks = sorted([*self.blocks, *outputs], key=lambda block: block.seq)
@@ -391,6 +402,7 @@ class _ThreadBuilder:
         write_1h = min(int(by_ttl.get("ephemeral_1h_input_tokens") or 0), written)
         details = usage.get("output_tokens_details")
         thinking = int(details.get("thinking_tokens") or 0) if isinstance(details, dict) else 0
+        output = int(usage.get("output_tokens") or 0)
         return Call(
             call_id=response.message_id,
             source=SOURCE,
@@ -403,8 +415,8 @@ class _ThreadBuilder:
             cache_read=int(usage.get("cache_read_input_tokens") or 0),
             cache_write_5m=written - write_1h,
             cache_write_1h=write_1h,
-            output=int(usage.get("output_tokens") or 0),
-            thinking=thinking,
+            output=output,
+            thinking=min(thinking, output),
             speed=str(usage.get("speed") or "standard"),
             effort=response.effort,
             inference_geo=str(usage.get("inference_geo") or ""),

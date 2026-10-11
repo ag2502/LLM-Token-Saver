@@ -3,7 +3,9 @@
 Constants were fitted on real Claude Code transcripts by regressing each call-to-call growth
 in prompt tokens on the characters of content added in between (R² = 0.94): tool output and
 user text ran at about 2.5 characters per token on Claude 4.7+ models, a screenshot added
-about 1,740 tokens, and the harness added about 100 unlogged tokens per turn.
+about 1,740 tokens, the harness added about 100 unlogged tokens per turn, and a response's
+visible output carried into later prompts in full (coefficient 1.03) while its thinking carried
+at 0.78.
 `TokenEstimator.fit` re-fits the characters-per-token ratio per model on the data at hand.
 """
 
@@ -20,6 +22,7 @@ from llm_token_saver.timeline import timeline
 
 IMAGE_TOKENS = 1_750
 TURN_OVERHEAD_TOKENS = 100
+THINKING_CARRIED_SHARE = 0.8
 NEW_TOKENIZER_CHARS_PER_TOKEN = 2.5
 OLD_TOKENIZER_CHARS_PER_TOKEN = 3.3  # pre-4.7 models make ~30% fewer tokens from the same text
 MIN_GAP_CHARS = 2_000
@@ -62,6 +65,9 @@ class TokenEstimator:
         return self.chars_per_token.get(normalize_model_id(model)) or default_chars_per_token(model)
 
     def tokens(self, block: Block, model: str) -> int:
+        """Tokens this block occupies in later prompts."""
+        if block.kind is BlockKind.THINKING:
+            return round((block.tokens or 0) * THINKING_CARRIED_SHARE)
         if block.tokens is not None:
             return block.tokens
         if block.kind is BlockKind.IMAGE:
@@ -80,10 +86,11 @@ def _text_gaps(thread: Thread) -> Iterator[tuple[str, int, int]]:
     for event in timeline(thread):
         if isinstance(event, Call):
             if previous is not None and clean and previous.model == event.model:
-                added = (
+                carried_output = previous.output - previous.thinking * (1 - THINKING_CARRIED_SHARE)
+                added = round(
                     event.prompt_tokens
                     - previous.prompt_tokens
-                    - previous.output
+                    - carried_output
                     - TURN_OVERHEAD_TOKENS
                 )
                 yield normalize_model_id(event.model), chars, added
@@ -93,5 +100,5 @@ def _text_gaps(thread: Thread) -> Iterator[tuple[str, int, int]]:
                 clean = False
         elif event.kind is BlockKind.IMAGE:
             clean = False
-        elif event.kind is not BlockKind.ASSISTANT_OUTPUT:
+        elif event.kind not in (BlockKind.ASSISTANT_OUTPUT, BlockKind.THINKING):
             chars += event.chars

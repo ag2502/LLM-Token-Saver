@@ -20,6 +20,7 @@ class BlockKind(StrEnum):
     ATTACHMENT = "attachment"
     IMAGE = "image"
     ASSISTANT_OUTPUT = "assistant_output"
+    THINKING = "thinking"
 
 
 class MarkerKind(StrEnum):
