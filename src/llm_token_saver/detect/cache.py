@@ -20,13 +20,15 @@ MISSED_SHARE = 0.5
 """A call counts as a rebuild when it read less than this share of the previous prompt."""
 
 
-def rebuild_cause(previous: Call, call: Call) -> str:
+def rebuild_cause(previous: Call, call: Call) -> str | None:
+    """Why the cache was rebuilt, or None when the cache-lifetime finding covers it."""
     if previous.model != call.model:
         return "model switched mid-session"
-    ttl = 3_600 if previous.cache_write_1h or call.cache_write_1h else 300
     idle = (call.timestamp - previous.timestamp).total_seconds()
-    if idle > ttl:
-        return f"idle past the {'1-hour' if ttl == 3_600 else '5-minute'} cache lifetime"
+    if idle > 3_600:
+        return "idle for more than an hour"
+    if idle > 300 and not (previous.cache_write_1h or call.cache_write_1h):
+        return None  # a 5-minute cache expiring: the cache-lifetime finding weighs the switch
     return "prompt prefix changed"
 
 
@@ -44,8 +46,9 @@ def cache_rebuild_finding(dataset: Dataset, prices: PriceTable) -> Finding | Non
             call = event
             if previous is not None and not compacted and dataset.in_window(call):
                 extra = _rebuild_extra_cost(previous, call, prices)
-                if extra > 0:
-                    extra_by_cause[rebuild_cause(previous, call)].append(extra)
+                cause = rebuild_cause(previous, call)
+                if extra > 0 and cause is not None:
+                    extra_by_cause[cause].append(extra)
             previous, compacted = call, False
     total = sum(sum(costs) for costs in extra_by_cause.values())
     if total <= 0:

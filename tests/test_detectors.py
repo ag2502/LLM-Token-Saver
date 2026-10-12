@@ -40,7 +40,7 @@ def test_idle_session_rebuild_costs_the_write_premium() -> None:
     assert finding.savings_usd == pytest.approx(
         500_000 * (OPUS_55["write_1h"] - OPUS_55["read"]) / 1e6
     )
-    assert finding.evidence[0].label == "idle past the 1-hour cache lifetime"
+    assert finding.evidence[0].label == "idle for more than an hour"
 
 
 def test_model_switch_and_changed_prefix_are_told_apart() -> None:
