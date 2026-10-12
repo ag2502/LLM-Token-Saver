@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import re
+import sys
+import traceback
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Annotated
@@ -12,8 +15,11 @@ from rich.console import Console
 
 from llm_token_saver import __version__
 from llm_token_saver.analysis import build_report
-from llm_token_saver.config import ConfigError, Settings, load_settings
+from llm_token_saver.config import ConfigError, Settings, home_dir, load_settings
+from llm_token_saver.detect import FindingKind
 from llm_token_saver.ingest import claude_code
+from llm_token_saver.integrations import macos
+from llm_token_saver.integrations.session import append_history, summarize_session
 from llm_token_saver.pricing import PriceTable
 from llm_token_saver.report.html import render_html
 from llm_token_saver.report.json_export import report_to_json
@@ -33,6 +39,10 @@ claude_code_app = typer.Typer(
     no_args_is_help=True,
 )
 app.add_typer(claude_code_app, name="claude-code")
+schedule_app = typer.Typer(
+    help="Write the weekly report automatically (macOS launchd).", no_args_is_help=True
+)
+claude_code_app.add_typer(schedule_app, name="schedule")
 
 SinceOption = Annotated[
     str,
@@ -91,6 +101,9 @@ def claude_code_report(
         Path | None,
         typer.Option("--html", help="Also write a self-contained HTML report to this file."),
     ] = None,
+    notify: Annotated[
+        bool, typer.Option(help="Show a macOS notification with the headline numbers.")
+    ] = False,
 ) -> None:
     """What is wasting tokens in your Claude Code sessions, ranked by monthly saving."""
     settings, dataset = _load_claude_code(since, projects_dir)
@@ -99,12 +112,93 @@ def claude_code_report(
     )
     console = Console()
     render_report(report, currency=settings.currency, console=console)
-    if json_path is not None:
-        json_path.write_text(report_to_json(report, settings.currency), encoding="utf-8")
-        console.print(f"\nWrote {json_path}")
-    if html_path is not None:
-        html_path.write_text(render_html(report, settings.currency), encoding="utf-8")
-        console.print(f"\nWrote {html_path}")
+    for path, text in (
+        (json_path, lambda: report_to_json(report, settings.currency)),
+        (html_path, lambda: render_html(report, settings.currency)),
+    ):
+        if path is not None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text(), encoding="utf-8")
+            console.print(f"\nWrote {path}")
+    if notify:
+        money = settings.currency.format
+        free = sum(f.savings_usd for f in report.findings if f.kind is FindingKind.FREE_WIN)
+        macos.notify(
+            f"{money(report.monthly(report.stats.cost.total))}/month API-equivalent; free wins "
+            f"about {money(report.monthly(free))}/month."
+            + (f" Report: {html_path}" if html_path else ""),
+            title="Token Saver weekly report",
+        )
+
+
+@claude_code_app.command("session-end")
+def claude_code_session_end(
+    notify: Annotated[bool, typer.Option(help="Show a macOS notification.")] = True,
+) -> None:
+    """Summarize one session from a Claude Code SessionEnd hook (hook JSON on stdin).
+
+    Appends the summary to ~/.tokensaver/sessions.jsonl. Never fails the hook: errors go to
+    ~/.tokensaver/hook-errors.log.
+    """
+    try:
+        payload = json.loads(sys.stdin.read() or "{}")
+        transcript = Path(str(payload.get("transcript_path", ""))).expanduser()
+        if not transcript.is_file():
+            return
+        summary = summarize_session(transcript, session_id=payload.get("session_id"))
+        if summary is None:
+            return
+        settings = load_settings()
+        append_history(summary, home_dir() / "sessions.jsonl")
+        if notify:
+            project = Path(summary.project).name or "Claude Code"
+            macos.notify(summary.headline(settings.currency.format(summary.cost_usd)), project)
+    except Exception:  # a hook must never get in the way of ending a session
+        log = home_dir() / "hook-errors.log"
+        log.parent.mkdir(parents=True, exist_ok=True)
+        with log.open("a", encoding="utf-8") as fh:
+            fh.write(f"{datetime.now(UTC).isoformat()}\n{traceback.format_exc()}\n")
+
+
+@schedule_app.command("install")
+def schedule_install(
+    weekday: Annotated[int, typer.Option(min=0, max=6, help="0 = Sunday, 1 = Monday.")] = 1,
+    hour: Annotated[int, typer.Option(min=0, max=23)] = 9,
+    minute: Annotated[int, typer.Option(min=0, max=59)] = 0,
+) -> None:
+    """Write a 7-day report to ~/.tokensaver/reports/ every week and notify when it is ready."""
+    if not macos.is_macos():
+        typer.echo("Scheduling uses launchd and is only available on macOS.", err=True)
+        raise typer.Exit(code=1)
+    reports = home_dir() / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    program = [
+        sys.executable,
+        "-m",
+        "llm_token_saver",
+        "claude-code",
+        "report",
+        "--since",
+        "7d",
+        "--html",
+        str(reports / "latest.html"),
+        "--json",
+        str(reports / "latest.json"),
+        "--notify",
+    ]
+    plist = macos.weekly_report_plist(
+        program, weekday=weekday, hour=hour, minute=minute, log_dir=reports
+    )
+    path = macos.install_agent(plist)
+    day = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][weekday]
+    typer.echo(f"Installed {path}: every {day} at {hour:02d}:{minute:02d}.")
+
+
+@schedule_app.command("remove")
+def schedule_remove() -> None:
+    """Stop the weekly report."""
+    path = macos.remove_agent()
+    typer.echo(f"Removed {path}." if path else "No weekly report was scheduled.")
 
 
 def parse_since(value: str, *, now: datetime | None = None) -> datetime:
