@@ -111,6 +111,8 @@ def _view(report: Report, currency: Currency) -> dict[str, Any]:
         )
     return {
         "title": report.title,
+        "group_noun": report.group_noun,
+        "session_noun": "sessions" if report.group_noun == "project" else "conversations",
         "version": __version__,
         "generated": f"{report.generated_at.astimezone():%Y-%m-%d %H:%M}",
         "period": f"{stats.first.astimezone():%Y-%m-%d} → {stats.last.astimezone():%Y-%m-%d}",

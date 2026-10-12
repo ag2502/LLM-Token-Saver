@@ -13,11 +13,11 @@ from typing import Annotated
 import typer
 from rich.console import Console
 
-from llm_token_saver import __version__
-from llm_token_saver.analysis import build_report
+from llm_token_saver import __version__, demo
+from llm_token_saver.analysis import Report, build_report
 from llm_token_saver.config import ConfigError, Settings, home_dir, load_settings
 from llm_token_saver.detect import FindingKind
-from llm_token_saver.ingest import claude_code
+from llm_token_saver.ingest import claude_code, otel
 from llm_token_saver.integrations import macos
 from llm_token_saver.integrations.session import append_history, summarize_session
 from llm_token_saver.pricing import PriceTable
@@ -110,25 +110,7 @@ def claude_code_report(
     report = build_report(
         dataset, PriceTable.bundled(), title="Claude Code", utc_offset_seconds=_utc_offset()
     )
-    console = Console()
-    render_report(report, currency=settings.currency, console=console)
-    for path, text in (
-        (json_path, lambda: report_to_json(report, settings.currency)),
-        (html_path, lambda: render_html(report, settings.currency)),
-    ):
-        if path is not None:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(text(), encoding="utf-8")
-            console.print(f"\nWrote {path}")
-    if notify:
-        money = settings.currency.format
-        free = sum(f.savings_usd for f in report.findings if f.kind is FindingKind.FREE_WIN)
-        macos.notify(
-            f"{money(report.monthly(report.stats.cost.total))}/month API-equivalent; free wins "
-            f"about {money(report.monthly(free))}/month."
-            + (f" Report: {html_path}" if html_path else ""),
-            title="Token Saver weekly report",
-        )
+    _emit(report, settings, json_path=json_path, html_path=html_path, notify=notify)
 
 
 @claude_code_app.command("session-end")
@@ -158,6 +140,95 @@ def claude_code_session_end(
         log.parent.mkdir(parents=True, exist_ok=True)
         with log.open("a", encoding="utf-8") as fh:
             fh.write(f"{datetime.now(UTC).isoformat()}\n{traceback.format_exc()}\n")
+
+
+JsonOption = Annotated[
+    Path | None, typer.Option("--json", help="Also write the report as JSON to this file.")
+]
+HtmlOption = Annotated[
+    Path | None,
+    typer.Option("--html", help="Also write a self-contained HTML report to this file."),
+]
+
+
+@app.command("analyze")
+def analyze(
+    paths: Annotated[
+        list[Path],
+        typer.Argument(
+            exists=True, help="OTLP/JSON trace files or directories (.json, .jsonl, .ndjson)."
+        ),
+    ],
+    since: Annotated[
+        str | None,
+        typer.Option(help="Only count calls after this: a duration (7d) or a date."),
+    ] = None,
+    json_path: JsonOption = None,
+    html_path: HtmlOption = None,
+) -> None:
+    """Find waste in any LLM app from OpenTelemetry GenAI traces."""
+    settings = _settings()
+    dataset = otel.load(paths, since=parse_since(since) if since else None)
+    if not dataset.calls:
+        typer.echo("No GenAI chat calls found in those traces.")
+        raise typer.Exit()
+    report = build_report(
+        dataset,
+        PriceTable.bundled(),
+        title="LLM app traces",
+        utc_offset_seconds=_utc_offset(),
+        group_noun="service",
+    )
+    _emit(report, settings, json_path=json_path, html_path=html_path, notify=False)
+
+
+@app.command("demo")
+def demo_command(
+    out: Annotated[Path, typer.Option(help="Where to write the demo traces.")] = Path(
+        "tokensaver-demo/traces.jsonl"
+    ),
+    days: Annotated[int, typer.Option(min=1, max=31)] = 7,
+    seed: Annotated[int, typer.Option(help="Change for a different but repeatable week.")] = 7,
+    html_path: HtmlOption = None,
+) -> None:
+    """Write a week of synthetic app traces with planted waste, then analyze them."""
+    traces = demo.generate(seed=seed, days=days)
+    path = traces.write(out)
+    console = Console()
+    console.print(f"Wrote {path}. Planted problems the analysis should find:")
+    for planted in traces.planted:
+        console.print(f"  - {planted.service}: {planted.description}")
+    console.print()
+    analyze([path], since=None, json_path=None, html_path=html_path)
+
+
+def _emit(
+    report: Report,
+    settings: Settings,
+    *,
+    json_path: Path | None,
+    html_path: Path | None,
+    notify: bool,
+) -> None:
+    console = Console()
+    render_report(report, currency=settings.currency, console=console)
+    for path, text in (
+        (json_path, lambda: report_to_json(report, settings.currency)),
+        (html_path, lambda: render_html(report, settings.currency)),
+    ):
+        if path is not None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text(), encoding="utf-8")
+            console.print(f"\nWrote {path}")
+    if notify:
+        money = settings.currency.format
+        free = sum(f.savings_usd for f in report.findings if f.kind is FindingKind.FREE_WIN)
+        macos.notify(
+            f"{money(report.monthly(report.stats.cost.total))}/month API-equivalent; free wins "
+            f"about {money(report.monthly(free))}/month."
+            + (f" Report: {html_path}" if html_path else ""),
+            title="Token Saver weekly report",
+        )
 
 
 @schedule_app.command("install")

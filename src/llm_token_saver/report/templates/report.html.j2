@@ -126,7 +126,7 @@ footer li { margin-bottom: 4px; }
 <main>
   <p class="eyebrow">LLM Token Saver · {{ view.title }}</p>
   <h1>Where your tokens went, and what to fix first</h1>
-  <p class="meta">{{ view.period }} · {{ view.calls }} calls in {{ view.sessions }} sessions ({{ view.subagent_runs }} subagent runs) · list prices retrieved {{ view.prices_retrieved }}</p>
+  <p class="meta">{{ view.period }} · {{ view.calls }} calls in {{ view.sessions }} {{ view.session_noun }}{% if view.subagent_runs != "0" %} ({{ view.subagent_runs }} subagent runs){% endif %} · list prices retrieved {{ view.prices_retrieved }}</p>
 
   <section class="card hero" aria-label="Monthly spend">
     <span class="figure">{{ view.monthly_spend }}</span>
@@ -251,9 +251,9 @@ footer li { margin-bottom: 4px; }
   </section>
 
   <section class="card">
-    <h2>By project</h2>
+    <h2>By {{ view.group_noun }}</h2>
     <div class="scroll"><table>
-      <thead><tr><th>Project</th><th class="num">Calls</th><th class="num">Spend</th><th class="num">Share</th></tr></thead>
+      <thead><tr><th>{{ view.group_noun|capitalize }}</th><th class="num">Calls</th><th class="num">Spend</th><th class="num">Share</th></tr></thead>
       <tbody>
       {% for r in view.by_project %}<tr><td>{{ r.key }}</td><td class="num">{{ r.calls }}</td><td class="num">{{ r.cost }}</td><td class="num">{{ r.share }}</td></tr>{% endfor %}
       </tbody>
@@ -261,9 +261,9 @@ footer li { margin-bottom: 4px; }
   </section>
 
   <section class="card">
-    <h2>Most expensive sessions</h2>
+    <h2>Most expensive {{ view.session_noun }}</h2>
     <div class="scroll"><table>
-      <thead><tr><th>Started</th><th>Project</th><th class="num">Calls</th><th class="num">Peak context</th><th class="num">Spend</th></tr></thead>
+      <thead><tr><th>Started</th><th>{{ view.group_noun|capitalize }}</th><th class="num">Calls</th><th class="num">Peak context</th><th class="num">Spend</th></tr></thead>
       <tbody>
       {% for r in view.sessions_table %}<tr><td>{{ r.started }}</td><td>{{ r.project }}</td><td class="num">{{ r.calls }}</td><td class="num">{{ r.peak }}</td><td class="num">{{ r.cost }}</td></tr>{% endfor %}
       </tbody>

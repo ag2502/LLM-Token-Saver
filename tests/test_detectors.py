@@ -20,6 +20,7 @@ def dataset(*builders: ThreadBuilder) -> Dataset:
 def test_fixed_prefix_reports_session_and_subagent_starts() -> None:
     main = ThreadBuilder("main").block(1_000, kind=BlockKind.USER_TEXT).call(read=25_000)
     agent = ThreadBuilder("agent-1", sidechain=True).block(500).call(read=10_500)
+    main.thread.source = agent.thread.source = "claude_code"
     data = dataset(main, agent)
     finding = fixed_prefix_finding(analyze_context(data, PRICES, ONE_CHAR_PER_TOKEN), data)
     assert finding is not None

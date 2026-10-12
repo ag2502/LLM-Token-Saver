@@ -113,14 +113,22 @@ KIND_LABELS = {
 def render_report(report: Report, *, currency: Currency, console: Console) -> None:
     stats = report.stats
     total = stats.cost.total
+    claude_code = report.group_noun == "project"
+    sessions = "sessions" if claude_code else "conversations"
     console.print(
         f"[bold]{escape(report.title)}[/bold] · {stats.first:%Y-%m-%d} → {stats.last:%Y-%m-%d}"
-        f" · {stats.calls:,} calls in {stats.sessions:,} sessions"
+        f" · {stats.calls:,} calls in {stats.sessions:,} {sessions}"
     )
     console.print(
-        f"API-equivalent spend [bold]{currency.format(total)}[/bold]"
+        f"{'API-equivalent spend' if claude_code else 'Spend'} "
+        f"[bold]{currency.format(total)}[/bold]"
         f" (≈{currency.format(report.monthly(total))}/month) at list prices retrieved"
-        f" {report.prices_retrieved:%Y-%m-%d}. On a subscription this is usage, not a bill."
+        f" {report.prices_retrieved:%Y-%m-%d}."
+        + (" On a subscription this is usage, not a bill." if claude_code else "")
+    )
+    console.print(
+        f"[dim]Amounts under each finding cover these {report.window_days:.1f} days; savings "
+        "in the table are projected to a month.[/dim]"
     )
     savings = [f for f in report.findings if f.kind is not FindingKind.INFO]
     actionable = [f for f in savings if report.monthly(f.savings_usd) >= MIN_SHOWN_MONTHLY_USD]

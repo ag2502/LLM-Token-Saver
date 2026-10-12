@@ -11,8 +11,12 @@ from llm_token_saver.schema import Dataset
 
 
 def fixed_prefix_finding(context: CarriedContext, dataset: Dataset) -> Finding | None:
-    sidechain = {thread.thread_id: thread.is_sidechain for thread in dataset.threads}
-    main = [n for tid, n in context.first_prefix_tokens.items() if not sidechain.get(tid)]
+    sidechain = {
+        thread.thread_id: thread.is_sidechain
+        for thread in dataset.threads
+        if thread.source == "claude_code"  # the wording below describes Claude Code sessions
+    }
+    main = [n for tid, n in context.first_prefix_tokens.items() if sidechain.get(tid) is False]
     subagents = [n for tid, n in context.first_prefix_tokens.items() if sidechain.get(tid)]
     if not (main or subagents) or context.prompt_cost <= 0:
         return None
