@@ -27,8 +27,11 @@ def test_bundled_table_metadata() -> None:
     assert {"claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5"} <= set(TABLE.models)
 
 
-@pytest.mark.parametrize("model_id", sorted(PriceTable.bundled().models))
-def test_table_matches_published_multipliers(model_id: str) -> None:
+@pytest.mark.parametrize(
+    "model_id",
+    sorted(m for m, p in PriceTable.bundled().models.items() if p.provider == "anthropic"),
+)
+def test_claude_table_matches_published_multipliers(model_id: str) -> None:
     """Guards against typos: writes are 1.25x / 2x input; reads 0.1x, 0.05x or 0.025x."""
     rates = TABLE.models[model_id].standard
     assert rates.cache_write_5m == pytest.approx(1.25 * rates.input)
@@ -111,6 +114,8 @@ def test_us_geography_only_applies_from_claude_4_6() -> None:
         ("claude-3-5-haiku-20241022", "claude-3-5-haiku"),
         ("claude-opus-4-6[1m]", "claude-opus-4-6"),
         ("Claude-Haiku-4-5-20251001", "claude-haiku-4-5"),
+        ("openai/gpt-5.4", "gpt-5.4"),
+        ("models/gemini-2.5-pro", "gemini-2.5-pro"),
     ],
 )
 def test_normalize_model_id(raw: str, expected: str) -> None:
@@ -120,3 +125,40 @@ def test_normalize_model_id(raw: str, expected: str) -> None:
 def test_unknown_models_are_unpriced_not_guessed() -> None:
     assert TABLE.lookup("claude-opus-4-9") is None
     assert TABLE.cost(make_call("<synthetic>", output=10)) is None
+
+
+@pytest.mark.parametrize(
+    "model_id",
+    sorted(m for m, p in PriceTable.bundled().models.items() if p.provider != "anthropic"),
+)
+def test_other_providers_have_no_cache_write_premium(model_id: str) -> None:
+    price = TABLE.models[model_id]
+    for rates in filter(None, (price.standard, price.long_context)):
+        assert rates.cache_write_5m == rates.cache_write_1h == rates.input
+        assert 0 < rates.cache_read <= rates.input
+        assert rates.output >= rates.input
+
+
+def test_openai_cached_input_and_long_context() -> None:
+    call = make_call("gpt-5.4", input_uncached=100_000, cache_read=100_000, output=100_000)
+    cost = TABLE.cost(call)
+    assert cost is not None
+    assert cost.total == pytest.approx((2.50 + 0.25 + 15.00) / 10)
+    long_call = make_call("gpt-5.4", input_uncached=300_000)
+    long_cost = TABLE.cost(long_call)
+    assert long_cost is not None
+    assert long_cost.input_uncached == pytest.approx(300_000 * 5.00 / 1e6)
+
+
+def test_openai_snapshots_fall_back_to_their_base_model() -> None:
+    snapshot = TABLE.lookup("gpt-4o-2024-08-06")
+    listed = TABLE.lookup("gpt-4o-2024-05-13")
+    assert snapshot is not None and snapshot.model_id == "gpt-4o"
+    assert listed is not None and listed.standard.input == pytest.approx(5.0)
+
+
+def test_gemini_pro_tier_above_200k_prompt_tokens() -> None:
+    short = TABLE.rates("gemini-2.5-pro", prompt_tokens=200_000)
+    long = TABLE.rates("gemini-2.5-pro", prompt_tokens=200_001)
+    assert short is not None and long is not None
+    assert (short.input, long.input, long.cache_read) == pytest.approx((1.25, 2.50, 0.25))

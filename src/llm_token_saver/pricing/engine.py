@@ -42,6 +42,7 @@ class ModelPrice:
     model_id: str
     name: str
     standard: Rates
+    provider: str = "anthropic"
     long_context: Rates | None = None
     long_context_above: int | None = None
     fast_multiplier: float = 1.0
@@ -74,21 +75,22 @@ class Cost:
         return self.prompt + self.output
 
 
-_REGION_PREFIX = re.compile(r"^(?:(?:us|eu|apac|jp|au|global)\.)?anthropic[./]")
+_REGION_PREFIX = re.compile(r"^(?:(?:us|eu|apac|jp|au|global)\.)?anthropic\.")
 _CONTEXT_SUFFIX = re.compile(r"\[[^\]]*\]$")
 _BEDROCK_VERSION = re.compile(r"-v\d+(?::\d+)?$")
 _DATE_SUFFIX = re.compile(r"[-@]\d{8}$")
+_ISO_DATE_SUFFIX = re.compile(r"-\d{4}-\d{2}-\d{2}$")
 
 
 def normalize_model_id(model: str) -> str:
     """Map provider spellings of a model to its first-party ID.
 
-    `us.anthropic.claude-sonnet-4-5-20250929-v1:0`, `claude-opus-4-5@20251101` and
-    `anthropic/claude-opus-5-5` become `claude-sonnet-4-5`, `claude-opus-4-5` and
-    `claude-opus-5-5`. Unknown names pass through unchanged and are reported as unpriced
-    rather than guessed.
+    `us.anthropic.claude-sonnet-4-5-20250929-v1:0`, `claude-opus-4-5@20251101`,
+    `anthropic/claude-opus-5-5` and `models/gemini-2.5-pro` become `claude-sonnet-4-5`,
+    `claude-opus-4-5`, `claude-opus-5-5` and `gemini-2.5-pro`. Unknown names pass through
+    unchanged and are reported as unpriced rather than guessed.
     """
-    name = model.strip().lower()
+    name = model.strip().lower().rsplit("/", 1)[-1]
     name = _CONTEXT_SUFFIX.sub("", name)
     name = _REGION_PREFIX.sub("", name)
     name = _BEDROCK_VERSION.sub("", name)
@@ -135,7 +137,13 @@ class PriceTable:
         )
 
     def lookup(self, model: str) -> ModelPrice | None:
-        return self.models.get(normalize_model_id(model))
+        name = normalize_model_id(model)
+        price = self.models.get(name)
+        if price is None and _ISO_DATE_SUFFIX.search(name):
+            # OpenAI snapshots (gpt-4o-2024-08-06) share their base model's price unless the
+            # table lists the snapshot itself.
+            price = self.models.get(_ISO_DATE_SUFFIX.sub("", name))
+        return price
 
     def rates(
         self,
@@ -199,6 +207,7 @@ def _parse_model(model_id: str, entry: dict[str, Any]) -> ModelPrice:
         model_id=model_id,
         name=entry["name"],
         standard=_parse_rates(entry),
+        provider=str(entry.get("provider", "anthropic")),
         long_context=_parse_rates(long_context) if long_context else None,
         long_context_above=int(long_context["above_prompt_tokens"]) if long_context else None,
         fast_multiplier=float(entry.get("fast_multiplier", 1.0)),

@@ -273,7 +273,7 @@ footer li { margin-bottom: 4px; }
   <footer>
     <h2>How these numbers are made</h2>
     <ul>
-      <li>Costs use list prices from <a href="{{ view.prices_source }}">the Claude pricing page</a>, retrieved {{ view.prices_retrieved }}, per token type: uncached input, cache writes (5-minute and 1-hour), cache reads and output.</li>
+      <li>Costs use the providers' list prices (<a href="{{ view.prices_source }}">Claude pricing</a> and the OpenAI and Gemini pricing pages), retrieved {{ view.prices_retrieved }}, per token type: uncached input, cache writes (5-minute and 1-hour), cache reads and output.</li>
       <li>Every call re-sends the whole conversation. Each call's prompt cost is split across the content inside it in prompt order (cache reads, then cache writes, then uncached input), so a tool result's cost includes every later call that carried it. Attributed costs add up to the bill exactly.</li>
       <li>Transcripts record characters, not tokens, for tool output and other context. Sizes are estimated with characters-per-token ratios fitted to your own usage ({{ view.chars_per_token or "defaults" }}). Savings marked "estimated" depend on these; "measured" ones come straight from billed usage.</li>
       <li>Savings are projected to 30 days from this period and deflated so that overlapping fixes are counted once.</li>

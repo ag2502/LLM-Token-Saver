@@ -208,3 +208,490 @@ cache_write_5m = 1.0
 cache_write_1h = 1.60
 cache_read = 0.08
 output = 4.0
+
+# ---------------------------------------------------------------------------------------------
+# OpenAI standard-tier list prices, from https://developers.openai.com/api/docs/pricing
+# (retrieved 2026-10-12). OpenAI caching has no write premium: a cached token costs the
+# "cached input" price and everything else the input price, so both write prices equal input.
+# Prompts over 272K input tokens use the long-context prices; the page does not say whether
+# that applies to the whole request, so the whole request is priced that way, as for Claude.
+
+[models."gpt-6-astra"]
+name = "gpt-6-astra"
+provider = "openai"
+input = 10.0
+cache_write_5m = 10.0
+cache_write_1h = 10.0
+cache_read = 1.0
+output = 50.0
+
+[models."gpt-6-astra".long_context]
+above_prompt_tokens = 272000
+input = 20.0
+cache_write_5m = 20.0
+cache_write_1h = 20.0
+cache_read = 2.0
+output = 75.0
+
+[models."gpt-6.1-sol"]
+name = "gpt-6.1-sol"
+provider = "openai"
+input = 2.0
+cache_write_5m = 2.0
+cache_write_1h = 2.0
+cache_read = 0.1
+output = 10.0
+
+[models."gpt-6.1-sol".long_context]
+above_prompt_tokens = 272000
+input = 4.0
+cache_write_5m = 4.0
+cache_write_1h = 4.0
+cache_read = 0.2
+output = 15.0
+
+[models."gpt-6-luna"]
+name = "gpt-6-luna"
+provider = "openai"
+input = 0.1
+cache_write_5m = 0.1
+cache_write_1h = 0.1
+cache_read = 0.01
+output = 0.5
+
+[models."gpt-6-luna".long_context]
+above_prompt_tokens = 272000
+input = 0.2
+cache_write_5m = 0.2
+cache_write_1h = 0.2
+cache_read = 0.02
+output = 0.75
+
+[models."gpt-6-sol"]
+name = "gpt-6-sol"
+provider = "openai"
+input = 2.0
+cache_write_5m = 2.0
+cache_write_1h = 2.0
+cache_read = 0.2
+output = 10.0
+
+[models."gpt-6-sol".long_context]
+above_prompt_tokens = 272000
+input = 4.0
+cache_write_5m = 4.0
+cache_write_1h = 4.0
+cache_read = 0.4
+output = 15.0
+
+[models."gpt-5.6-sol"]
+name = "gpt-5.6-sol"
+provider = "openai"
+input = 4.0
+cache_write_5m = 4.0
+cache_write_1h = 4.0
+cache_read = 0.4
+output = 20.0
+
+[models."gpt-5.6-sol".long_context]
+above_prompt_tokens = 272000
+input = 8.0
+cache_write_5m = 8.0
+cache_write_1h = 8.0
+cache_read = 0.8
+output = 30.0
+
+[models."gpt-5.6-terra"]
+name = "gpt-5.6-terra"
+provider = "openai"
+input = 2.0
+cache_write_5m = 2.0
+cache_write_1h = 2.0
+cache_read = 0.2
+output = 12.0
+
+[models."gpt-5.6-terra".long_context]
+above_prompt_tokens = 272000
+input = 4.0
+cache_write_5m = 4.0
+cache_write_1h = 4.0
+cache_read = 0.4
+output = 18.0
+
+[models."gpt-5.6-luna"]
+name = "gpt-5.6-luna"
+provider = "openai"
+input = 0.2
+cache_write_5m = 0.2
+cache_write_1h = 0.2
+cache_read = 0.02
+output = 1.2
+
+[models."gpt-5.6-luna".long_context]
+above_prompt_tokens = 272000
+input = 0.4
+cache_write_5m = 0.4
+cache_write_1h = 0.4
+cache_read = 0.04
+output = 1.8
+
+[models."gpt-5.5"]
+name = "gpt-5.5"
+provider = "openai"
+input = 5.0
+cache_write_5m = 5.0
+cache_write_1h = 5.0
+cache_read = 0.5
+output = 30.0
+
+[models."gpt-5.5".long_context]
+above_prompt_tokens = 272000
+input = 10.0
+cache_write_5m = 10.0
+cache_write_1h = 10.0
+cache_read = 1.0
+output = 45.0
+
+[models."gpt-5.5-pro"]
+name = "gpt-5.5-pro"
+provider = "openai"
+input = 30.0
+cache_write_5m = 30.0
+cache_write_1h = 30.0
+cache_read = 30.0  # no cached-input price listed
+output = 180.0
+
+[models."gpt-5.4"]
+name = "gpt-5.4"
+provider = "openai"
+input = 2.5
+cache_write_5m = 2.5
+cache_write_1h = 2.5
+cache_read = 0.25
+output = 15.0
+
+[models."gpt-5.4".long_context]
+above_prompt_tokens = 272000
+input = 5.0
+cache_write_5m = 5.0
+cache_write_1h = 5.0
+cache_read = 0.5
+output = 22.5
+
+[models."gpt-5.4-mini"]
+name = "gpt-5.4-mini"
+provider = "openai"
+input = 0.75
+cache_write_5m = 0.75
+cache_write_1h = 0.75
+cache_read = 0.075
+output = 4.5
+
+[models."gpt-5.4-nano"]
+name = "gpt-5.4-nano"
+provider = "openai"
+input = 0.2
+cache_write_5m = 0.2
+cache_write_1h = 0.2
+cache_read = 0.02
+output = 1.25
+
+[models."gpt-5.4-pro"]
+name = "gpt-5.4-pro"
+provider = "openai"
+input = 30.0
+cache_write_5m = 30.0
+cache_write_1h = 30.0
+cache_read = 30.0  # no cached-input price listed
+output = 180.0
+
+[models."gpt-5.4-pro".long_context]
+above_prompt_tokens = 272000
+input = 60.0
+cache_write_5m = 60.0
+cache_write_1h = 60.0
+cache_read = 60.0
+output = 270.0
+
+[models."gpt-5.3-codex"]
+name = "gpt-5.3-codex"
+provider = "openai"
+input = 1.75
+cache_write_5m = 1.75
+cache_write_1h = 1.75
+cache_read = 0.175
+output = 14.0
+
+[models."gpt-5.2"]
+name = "gpt-5.2"
+provider = "openai"
+input = 1.75
+cache_write_5m = 1.75
+cache_write_1h = 1.75
+cache_read = 0.175
+output = 14.0
+
+[models."gpt-5.2-pro"]
+name = "gpt-5.2-pro"
+provider = "openai"
+input = 21.0
+cache_write_5m = 21.0
+cache_write_1h = 21.0
+cache_read = 21.0  # no cached-input price listed
+output = 168.0
+
+[models."gpt-5.1"]
+name = "gpt-5.1"
+provider = "openai"
+input = 1.25
+cache_write_5m = 1.25
+cache_write_1h = 1.25
+cache_read = 0.125
+output = 10.0
+
+[models."gpt-5"]
+name = "gpt-5"
+provider = "openai"
+input = 1.25
+cache_write_5m = 1.25
+cache_write_1h = 1.25
+cache_read = 0.125
+output = 10.0
+
+[models."gpt-5-mini"]
+name = "gpt-5-mini"
+provider = "openai"
+input = 0.25
+cache_write_5m = 0.25
+cache_write_1h = 0.25
+cache_read = 0.025
+output = 2.0
+
+[models."gpt-5-nano"]
+name = "gpt-5-nano"
+provider = "openai"
+input = 0.05
+cache_write_5m = 0.05
+cache_write_1h = 0.05
+cache_read = 0.005
+output = 0.4
+
+[models."gpt-5-pro"]
+name = "gpt-5-pro"
+provider = "openai"
+input = 15.0
+cache_write_5m = 15.0
+cache_write_1h = 15.0
+cache_read = 15.0  # no cached-input price listed
+output = 120.0
+
+[models."gpt-4.1"]
+name = "gpt-4.1"
+provider = "openai"
+input = 2.0
+cache_write_5m = 2.0
+cache_write_1h = 2.0
+cache_read = 0.5
+output = 8.0
+
+[models."gpt-4.1-mini"]
+name = "gpt-4.1-mini"
+provider = "openai"
+input = 0.4
+cache_write_5m = 0.4
+cache_write_1h = 0.4
+cache_read = 0.1
+output = 1.6
+
+[models."gpt-4.1-nano"]
+name = "gpt-4.1-nano"
+provider = "openai"
+input = 0.1
+cache_write_5m = 0.1
+cache_write_1h = 0.1
+cache_read = 0.025
+output = 0.4
+
+[models."gpt-4o"]
+name = "gpt-4o"
+provider = "openai"
+input = 2.5
+cache_write_5m = 2.5
+cache_write_1h = 2.5
+cache_read = 1.25
+output = 10.0
+
+[models."gpt-4o-2024-05-13"]
+name = "gpt-4o-2024-05-13"
+provider = "openai"
+input = 5.0
+cache_write_5m = 5.0
+cache_write_1h = 5.0
+cache_read = 5.0  # no cached-input price listed
+output = 15.0
+
+[models."gpt-4o-mini"]
+name = "gpt-4o-mini"
+provider = "openai"
+input = 0.15
+cache_write_5m = 0.15
+cache_write_1h = 0.15
+cache_read = 0.075
+output = 0.6
+
+[models."o1"]
+name = "o1"
+provider = "openai"
+input = 15.0
+cache_write_5m = 15.0
+cache_write_1h = 15.0
+cache_read = 7.5
+output = 60.0
+
+[models."o1-pro"]
+name = "o1-pro"
+provider = "openai"
+input = 150.0
+cache_write_5m = 150.0
+cache_write_1h = 150.0
+cache_read = 150.0  # no cached-input price listed
+output = 600.0
+
+[models."o3-pro"]
+name = "o3-pro"
+provider = "openai"
+input = 20.0
+cache_write_5m = 20.0
+cache_write_1h = 20.0
+cache_read = 20.0  # no cached-input price listed
+output = 80.0
+
+[models."o3"]
+name = "o3"
+provider = "openai"
+input = 2.0
+cache_write_5m = 2.0
+cache_write_1h = 2.0
+cache_read = 0.5
+output = 8.0
+
+[models."o4-mini"]
+name = "o4-mini"
+provider = "openai"
+input = 1.1
+cache_write_5m = 1.1
+cache_write_1h = 1.1
+cache_read = 0.275
+output = 4.4
+
+[models."o3-mini"]
+name = "o3-mini"
+provider = "openai"
+input = 1.1
+cache_write_5m = 1.1
+cache_write_1h = 1.1
+cache_read = 0.55
+output = 4.4
+
+# ---------------------------------------------------------------------------------------------
+# Gemini paid-tier list prices, from https://ai.google.dev/gemini-api/docs/pricing (retrieved
+# 2026-10-12), valid through 2026-12-31 (gemini-3.8-flash and gemini-3.6-flash double on
+# 2027-01-01). Cache reads use the context-caching price; hourly cache storage is not modeled.
+# Text/image/video input prices are used; audio input is priced higher and is not modeled.
+
+[models."gemini-3.8-flash"]
+name = "gemini-3.8-flash"
+provider = "google"
+input = 0.75
+cache_write_5m = 0.75
+cache_write_1h = 0.75
+cache_read = 0.075
+output = 3.75
+
+[models."gemini-3.6-flash"]
+name = "gemini-3.6-flash"
+provider = "google"
+input = 0.75
+cache_write_5m = 0.75
+cache_write_1h = 0.75
+cache_read = 0.075
+output = 3.75
+
+[models."gemini-3.5-flash-lite"]
+name = "gemini-3.5-flash-lite"
+provider = "google"
+input = 0.3
+cache_write_5m = 0.3
+cache_write_1h = 0.3
+cache_read = 0.03
+output = 2.5
+
+[models."gemini-3.1-flash-lite"]
+name = "gemini-3.1-flash-lite"
+provider = "google"
+input = 0.25
+cache_write_5m = 0.25
+cache_write_1h = 0.25
+cache_read = 0.025
+output = 1.5
+
+[models."gemini-3.1-pro-preview"]
+name = "gemini-3.1-pro-preview"
+provider = "google"
+input = 2.0
+cache_write_5m = 2.0
+cache_write_1h = 2.0
+cache_read = 0.2
+output = 12.0
+
+[models."gemini-3.1-pro-preview".long_context]
+above_prompt_tokens = 200000
+input = 4.0
+cache_write_5m = 4.0
+cache_write_1h = 4.0
+cache_read = 0.4
+output = 18.0
+
+[models."gemini-3-flash-preview"]
+name = "gemini-3-flash-preview"
+provider = "google"
+input = 0.5
+cache_write_5m = 0.5
+cache_write_1h = 0.5
+cache_read = 0.05
+output = 3.0
+
+[models."gemini-2.5-pro"]
+name = "gemini-2.5-pro"
+provider = "google"
+input = 1.25
+cache_write_5m = 1.25
+cache_write_1h = 1.25
+cache_read = 0.125
+output = 10.0
+
+[models."gemini-2.5-pro".long_context]
+above_prompt_tokens = 200000
+input = 2.5
+cache_write_5m = 2.5
+cache_write_1h = 2.5
+cache_read = 0.25
+output = 15.0
+
+[models."gemini-2.5-flash"]
+name = "gemini-2.5-flash"
+provider = "google"
+input = 0.3
+cache_write_5m = 0.3
+cache_write_1h = 0.3
+cache_read = 0.03
+output = 2.5
+
+[models."gemini-2.5-flash-lite"]
+name = "gemini-2.5-flash-lite"
+provider = "google"
+input = 0.1
+cache_write_5m = 0.1
+cache_write_1h = 0.1
+cache_read = 0.01
+output = 0.4
