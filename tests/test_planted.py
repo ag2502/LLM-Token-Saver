@@ -5,6 +5,7 @@ import pytest
 from llm_token_saver import demo
 from llm_token_saver.detect import Finding
 from llm_token_saver.detect.prompt_cache import prompt_cache_findings
+from llm_token_saver.detect.traffic import batchable_finding, duplicate_request_finding
 from llm_token_saver.detect.ttl import ttl_findings
 from llm_token_saver.estimate import TokenEstimator
 from llm_token_saver.ingest import otel
@@ -51,3 +52,19 @@ def test_cache_lifetime_choices(traces: demo.DemoTraces, dataset: Dataset) -> No
     assert only_service(findings["cache_ttl_1h"], "weekly-reports") == pytest.approx(
         planted(traces, "cache_ttl_1h"), rel=TOLERANCE
     )
+
+
+def test_repeated_requests(traces: demo.DemoTraces, dataset: Dataset) -> None:
+    finding = duplicate_request_finding(dataset, PriceTable.bundled())
+    assert finding is not None
+    assert [e.label for e in finding.evidence] == ["faq-widget"]
+    assert finding.savings_usd == pytest.approx(
+        planted(traces, "duplicate_requests"), rel=TOLERANCE
+    )
+
+
+def test_batchable_scheduled_job(traces: demo.DemoTraces, dataset: Dataset) -> None:
+    finding = batchable_finding(dataset, PriceTable.bundled())
+    assert finding is not None
+    assert [e.label for e in finding.evidence] == ["nightly-digest"]
+    assert finding.savings_usd == pytest.approx(planted(traces, "batchable"), rel=TOLERANCE)
