@@ -31,6 +31,25 @@ class MarkerKind(StrEnum):
 
 
 @dataclass(slots=True)
+class PromptPart:
+    """One piece of a request's prompt, in the order it was sent: tools, system, messages.
+
+    Text is held in memory for analysis only; reports show positions and hashes, not content,
+    unless asked to.
+    """
+
+    kind: str
+    """"tools", "system" or "message"."""
+    role: str = ""
+    text: str = ""
+    content_hash: str = ""
+
+    @property
+    def chars(self) -> int:
+        return len(self.text)
+
+
+@dataclass(slots=True)
 class Call:
     """One billed model request."""
 
@@ -54,6 +73,13 @@ class Call:
     is_sidechain: bool = False
     project: str = ""
     stop_reason: str = ""
+    provider: str = ""
+    trace_id: str = ""
+    latency_ms: float | None = None
+    request_hash: str = ""
+    """Identifies byte-identical requests (model, prompt and sampling parameters)."""
+    prompt: list[PromptPart] | None = None
+    """The full prompt in sending order, when the source captured it."""
 
     @property
     def cache_write(self) -> int:
