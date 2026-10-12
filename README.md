@@ -40,6 +40,29 @@ uv run tokensaver claude-code stats --since 7d            # spend breakdowns onl
 `--since` takes a duration (`12h`, `7d`, `2w`) or a date (`2026-10-01`). `--json PATH` writes the
 report in a machine-readable form, with every amount in USD.
 
+## Use it every day
+
+Install the command once (`uv tool install --editable .` from the checkout), then:
+
+- **A summary when each session ends.** Add a `SessionEnd` hook to `~/.claude/settings.json`.
+  Each session's API-equivalent cost, calls, peak context and stale-context share are appended
+  to `~/.tokensaver/sessions.jsonl` and, on macOS, shown as a notification (hook stdout only
+  reaches Claude Code's debug log, so a notification is the visible channel):
+
+  ```json
+  {
+    "hooks": {
+      "SessionEnd": [
+        {"hooks": [{"type": "command", "command": "tokensaver claude-code session-end", "timeout": 15}]}
+      ]
+    }
+  }
+  ```
+
+- **A weekly report (macOS).** `tokensaver claude-code schedule install` adds a launchd agent
+  that writes `~/.tokensaver/reports/latest.html` every Monday at 09:00 and notifies you;
+  `tokensaver claude-code schedule remove` takes it away.
+
 ## How it works
 
 1. **Import.** Each transcript becomes a thread of billed calls and the content that entered the
