@@ -27,6 +27,8 @@ NEW_TOKENIZER_CHARS_PER_TOKEN = 2.5
 OLD_TOKENIZER_CHARS_PER_TOKEN = 3.3  # pre-4.7 models make ~30% fewer tokens from the same text
 MIN_GAP_CHARS = 2_000
 MIN_SAMPLES = 20
+MIN_PROMPT_TOKENS = 500
+MIN_PROMPT_SAMPLES = 5
 _RATIO_BOUNDS = (1.5, 6.0)
 _VERSION = re.compile(r"claude-(?:(?:opus|sonnet|haiku|fable|mythos)-)?(\d+)(?:-(\d{1,2}))?")
 
@@ -48,17 +50,23 @@ class TokenEstimator:
 
     @classmethod
     def fit(cls, threads: Iterable[Thread]) -> TokenEstimator:
-        samples: dict[str, list[float]] = defaultdict(list)
+        """Fit per model, preferring whole captured prompts over call-to-call growth."""
+        from_prompts: dict[str, list[float]] = defaultdict(list)
+        from_gaps: dict[str, list[float]] = defaultdict(list)
         for thread in threads:
+            for call in thread.calls:
+                chars = sum(part.chars for part in call.prompt or ())
+                if chars and call.prompt_tokens >= MIN_PROMPT_TOKENS:
+                    from_prompts[normalize_model_id(call.model)].append(chars / call.prompt_tokens)
             for model, chars, added in _text_gaps(thread):
                 if chars >= MIN_GAP_CHARS and added > 0:
-                    samples[model].append(chars / added)
+                    from_gaps[model].append(chars / added)
         low, high = _RATIO_BOUNDS
-        fitted = {
-            model: min(max(statistics.median(ratios), low), high)
-            for model, ratios in samples.items()
-            if len(ratios) >= MIN_SAMPLES
-        }
+        fitted: dict[str, float] = {}
+        for samples, needed in ((from_gaps, MIN_SAMPLES), (from_prompts, MIN_PROMPT_SAMPLES)):
+            for model, ratios in samples.items():
+                if len(ratios) >= needed:
+                    fitted[model] = min(max(statistics.median(ratios), low), high)
         return cls(fitted)
 
     def ratio(self, model: str) -> float:

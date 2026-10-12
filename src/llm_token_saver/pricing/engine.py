@@ -49,6 +49,8 @@ class ModelPrice:
     geo_multiplier: bool = False
     successor: str | None = None
     """A newer model in the same tier, when one exists."""
+    min_cacheable_tokens: int | None = None
+    """Shortest prompt prefix the provider will cache for this model."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,12 +110,14 @@ class PriceTable:
         retrieved: date,
         batch_multiplier: float,
         us_geo_multiplier: float,
+        default_min_cacheable_tokens: int = 1024,
     ) -> None:
         self.models = models
         self.source = source
         self.retrieved = retrieved
         self.batch_multiplier = batch_multiplier
         self.us_geo_multiplier = us_geo_multiplier
+        self.default_min_cacheable_tokens = default_min_cacheable_tokens
 
     @classmethod
     def bundled(cls) -> PriceTable:
@@ -134,6 +138,7 @@ class PriceTable:
             retrieved=meta["retrieved"],
             batch_multiplier=meta["batch_multiplier"],
             us_geo_multiplier=meta["us_geo_multiplier"],
+            default_min_cacheable_tokens=int(meta.get("default_min_cacheable_tokens", 1024)),
         )
 
     def lookup(self, model: str) -> ModelPrice | None:
@@ -144,6 +149,12 @@ class PriceTable:
             # table lists the snapshot itself.
             price = self.models.get(_ISO_DATE_SUFFIX.sub("", name))
         return price
+
+    def min_cacheable_tokens(self, model: str) -> int:
+        price = self.lookup(model)
+        if price is not None and price.min_cacheable_tokens is not None:
+            return price.min_cacheable_tokens
+        return self.default_min_cacheable_tokens
 
     def rates(
         self,
@@ -213,4 +224,5 @@ def _parse_model(model_id: str, entry: dict[str, Any]) -> ModelPrice:
         fast_multiplier=float(entry.get("fast_multiplier", 1.0)),
         geo_multiplier=bool(entry.get("geo_multiplier", False)),
         successor=entry.get("successor"),
+        min_cacheable_tokens=entry.get("min_cacheable_tokens"),
     )

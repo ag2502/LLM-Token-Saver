@@ -6,6 +6,9 @@ import dataclasses
 from dataclasses import dataclass, field
 from enum import StrEnum
 
+from llm_token_saver.pricing import Rates
+from llm_token_saver.schema import Call
+
 
 class FindingKind(StrEnum):
     FREE_WIN = "free_win"
@@ -70,3 +73,16 @@ def rank(findings: list[Finding], pool_totals: dict[CostPool, float]) -> list[Fi
         remaining[finding.pool] -= share
         credited.append(dataclasses.replace(finding, savings_usd=share))
     return sorted(credited, key=lambda f: (f.kind is FindingKind.INFO, -f.savings_usd))
+
+
+def fresh_rate(call: Call, rates: Rates) -> float:
+    """USD per million tokens `call` paid for prompt tokens it did not read from the cache."""
+    fresh = call.input_uncached + call.cache_write
+    if not fresh:
+        return rates.input
+    paid = (
+        call.input_uncached * rates.input
+        + call.cache_write_5m * rates.cache_write_5m
+        + call.cache_write_1h * rates.cache_write_1h
+    )
+    return paid / fresh
