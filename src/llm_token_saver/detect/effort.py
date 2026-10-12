@@ -72,8 +72,9 @@ def effort_finding(dataset: Dataset, prices: PriceTable, context: CarriedContext
             "had thought as much as a typical high-effort turn; hard problems may need more."
         ),
         fix=(
-            "Make high the default (/effort high, or `effortLevel` in settings) and raise it "
-            "for the problems that need it."
+            "Make high the default (/effort high, or `effortLevel`, per model under "
+            "`modelSettings` in ~/.claude/settings.json) and raise it for the problems that "
+            "need it."
         ),
         savings_usd=savings,
         pool=CostPool.OUTPUT,

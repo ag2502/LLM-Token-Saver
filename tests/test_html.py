@@ -58,7 +58,7 @@ def test_report_shows_findings_and_charts(html: str) -> None:
     assert "Long command output stays in context" in html
     assert "Where the money went" in html
     assert html.count('class="col"') == 1  # one day of data
-    assert "<code>BASH_MAX_OUTPUT_LENGTH</code>" in html
+    assert "<code>&#34;bashOutputMaxChars&#34;: 5000</code>" in html
 
 
 def test_untrusted_labels_are_escaped(tmp_path: Path) -> None:

@@ -220,9 +220,9 @@ _TOOL_GROUPS = {
         "Long command output stays in context",
         "Make commands print less: pipe through `tail -n 40` or `grep`, use quiet flags "
         "(`pytest -q`, `npm ci --silent`, `git log --oneline -n 20`), and print only the "
-        "lines you need from a file instead of `cat`-ing it. To cap every result, lower "
-        "`BASH_MAX_OUTPUT_LENGTH` (default 30000 characters) in the `env` block of "
-        "~/.claude/settings.json.",
+        "lines you need from a file instead of `cat`-ing it. To cap every result, set "
+        '`"bashOutputMaxChars": 5000` in ~/.claude/settings.json (default 30000): longer '
+        "output is saved to a file and Claude gets a preview plus its path.",
     ),
     "Read": (
         "Whole-file reads stay in context",
@@ -349,9 +349,9 @@ def stale_context_finding(context: CarriedContext, dataset: Dataset) -> Finding 
         ),
         fix=(
             "Start a fresh session (/clear) when you switch to an unrelated task, and compact "
-            "earlier: set `CLAUDE_CODE_AUTO_COMPACT_WINDOW` (for example 300000) in the `env` "
-            "block of ~/.claude/settings.json so sessions compact at that size instead of "
-            "near the full context window."
+            'earlier: set `"autoCompactWindow": 300000` in ~/.claude/settings.json (or use '
+            "/autocompact) so sessions compact at that size instead of near the full context "
+            "window."
         ),
         savings_usd=context.stale_cost * (1 - COMPACTION_KEEPS),
         evidence=[
