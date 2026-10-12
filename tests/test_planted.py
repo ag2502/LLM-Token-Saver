@@ -4,7 +4,9 @@ import pytest
 
 from llm_token_saver import demo
 from llm_token_saver.detect import Finding
+from llm_token_saver.detect.prompt import duplicate_chunk_finding
 from llm_token_saver.detect.prompt_cache import prompt_cache_findings
+from llm_token_saver.detect.routing import routable_calls_finding
 from llm_token_saver.detect.traffic import batchable_finding, duplicate_request_finding
 from llm_token_saver.detect.ttl import ttl_findings
 from llm_token_saver.estimate import TokenEstimator
@@ -68,3 +70,20 @@ def test_batchable_scheduled_job(traces: demo.DemoTraces, dataset: Dataset) -> N
     assert finding is not None
     assert [e.label for e in finding.evidence] == ["nightly-digest"]
     assert finding.savings_usd == pytest.approx(planted(traces, "batchable"), rel=TOLERANCE)
+
+
+def test_duplicated_retrieval_chunks(traces: demo.DemoTraces, dataset: Dataset) -> None:
+    estimator = TokenEstimator.fit(dataset.threads)
+    finding = duplicate_chunk_finding(dataset, PriceTable.bundled(), estimator)
+    assert finding is not None
+    assert [e.label for e in finding.evidence] == ["docs-qa"]
+    assert finding.savings_usd == pytest.approx(planted(traces, "duplicate_chunks"), rel=TOLERANCE)
+
+
+def test_short_answers_from_a_frontier_model(traces: demo.DemoTraces, dataset: Dataset) -> None:
+    finding = routable_calls_finding(dataset, PriceTable.bundled())
+    assert finding is not None and finding.ceiling
+    assert [e.label for e in finding.evidence] == [
+        "ticket-router: claude-opus-5-5 → claude-haiku-5-5"
+    ]
+    assert finding.savings_usd == pytest.approx(planted(traces, "routable_calls"), rel=TOLERANCE)
