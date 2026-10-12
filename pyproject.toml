@@ -1,6 +1,6 @@
 [project]
 name = "llm-token-saver"
-version = "0.0.1"
+version = "0.1.0"
 description = "Find out why your LLM bill is high, fix the waste, and route easy calls to cheaper models with a statistical quality guarantee."
 readme = "README.md"
 license = "Apache-2.0"
